@@ -8,6 +8,9 @@ import dashboardRouter from './routes/dashboard';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy (Traefik) for secure cookies behind reverse proxy
+app.set('trust proxy', 1);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
