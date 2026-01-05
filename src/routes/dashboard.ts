@@ -1,11 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { queries, User } from '../db';
+import { config, withBasePath } from '../config';
 
 const router = Router();
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
-    return res.redirect('/auth/google');
+    return res.redirect(withBasePath('/auth/google'));
   }
   next();
 }
@@ -15,7 +16,7 @@ router.get('/', requireAuth, (req, res) => {
 
   if (!user) {
     req.session.destroy(() => {});
-    return res.redirect('/auth/google');
+    return res.redirect(withBasePath('/auth/google'));
   }
 
   const saved = req.query.saved === '1';
@@ -32,10 +33,11 @@ router.post('/settings', requireAuth, (req, res) => {
     enabled: enabled === 'on' ? 1 : 0,
   });
 
-  res.redirect('/dashboard?saved=1');
+  res.redirect(withBasePath('/dashboard?saved=1'));
 });
 
 function renderDashboard(user: User, saved: boolean): string {
+  const bp = config.basePath;
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -143,7 +145,7 @@ function renderDashboard(user: User, saved: boolean): string {
 
     ${saved ? '<div class="success">Settings saved!</div>' : ''}
 
-    <form method="POST" action="/dashboard/settings" class="card">
+    <form method="POST" action="${bp}/dashboard/settings" class="card">
       <label for="discord_webhook_url">Discord Webhook URL</label>
       <input
         type="text"
@@ -177,12 +179,12 @@ function renderDashboard(user: User, saved: boolean): string {
       <button type="submit">저장</button>
     </form>
 
-    <a href="/auth/logout" class="logout">로그아웃</a>
+    <a href="${bp}/auth/logout" class="logout">로그아웃</a>
   </div>
 
   <script>
     if (new URLSearchParams(window.location.search).get('saved')) {
-      history.replaceState(null, '', '/dashboard');
+      history.replaceState(null, '', '${bp}/dashboard');
     }
   </script>
 </body>

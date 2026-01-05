@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { google } from 'googleapis';
 import { queries, User } from '../db';
+import { config, withBasePath } from '../config';
 
 const router = Router();
 
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  `${process.env.BASE_URL}/auth/callback`
+  config.googleClientId,
+  config.googleClientSecret,
+  `${config.baseUrl}${config.basePath}/auth/callback`
 );
 
 const SCOPES = [
@@ -22,7 +23,6 @@ router.get('/google', (req, res) => {
     scope: SCOPES,
     prompt: 'consent',
   });
-  console.log(authUrl);
   res.redirect(authUrl);
 });
 
@@ -55,7 +55,7 @@ router.get('/callback', async (req, res) => {
     const user = queries.getUserByGoogleId.get(userInfo.id) as User;
 
     req.session.userId = user.id;
-    res.redirect('/dashboard');
+    res.redirect(withBasePath('/dashboard'));
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).send('Authentication failed');
@@ -67,7 +67,7 @@ router.get('/logout', (req, res) => {
     if (err) {
       console.error('Logout error:', err);
     }
-    res.redirect('/');
+    res.redirect(withBasePath('/'));
   });
 });
 
