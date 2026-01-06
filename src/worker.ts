@@ -46,27 +46,41 @@ async function getUpcomingEvents(user: User): Promise<CalendarEvent[]> {
     const timeMin = now.toISOString();
     const timeMax = new Date(now.getTime() + 60 * 60 * 1000).toISOString(); // 1 hour ahead
 
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin,
-      timeMax,
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
-
+    // 모든 캘린더 목록 가져오기 (iCal 구독 캘린더 포함)
+    const calendarList = await calendar.calendarList.list();
     const events: CalendarEvent[] = [];
-    for (const event of response.data.items || []) {
-      const startTime = event.start?.dateTime || event.start?.date;
-      if (!startTime || !event.id) continue;
 
-      events.push({
-        id: event.id,
-        summary: event.summary || '(제목 없음)',
-        start: new Date(startTime),
-        location: event.location || undefined,
-        htmlLink: event.htmlLink || undefined,
-      });
+    for (const cal of calendarList.data.items || []) {
+      if (!cal.id) continue;
+
+      try {
+        const response = await calendar.events.list({
+          calendarId: cal.id,
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime',
+        });
+
+        for (const event of response.data.items || []) {
+          const startTime = event.start?.dateTime || event.start?.date;
+          if (!startTime || !event.id) continue;
+
+          events.push({
+            id: event.id,
+            summary: event.summary || '(제목 없음)',
+            start: new Date(startTime),
+            location: event.location || undefined,
+            htmlLink: event.htmlLink || undefined,
+          });
+        }
+      } catch (calError: any) {
+        console.error(`[${user.email}] Failed to fetch events from calendar ${cal.id}:`, calError.message);
+      }
     }
+
+    // 시작 시간순으로 정렬
+    events.sort((a, b) => a.start.getTime() - b.start.getTime());
 
     return events;
   } catch (error: any) {
@@ -103,27 +117,41 @@ async function getDailyEvents(user: User): Promise<CalendarEvent[]> {
     ));
     todayEnd.setTime(todayEnd.getTime() - koreaOffset);
 
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin: todayStart.toISOString(),
-      timeMax: todayEnd.toISOString(),
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
-
+    // 모든 캘린더 목록 가져오기 (iCal 구독 캘린더 포함)
+    const calendarList = await calendar.calendarList.list();
     const events: CalendarEvent[] = [];
-    for (const event of response.data.items || []) {
-      const startTime = event.start?.dateTime || event.start?.date;
-      if (!startTime || !event.id) continue;
 
-      events.push({
-        id: event.id,
-        summary: event.summary || '(제목 없음)',
-        start: new Date(startTime),
-        location: event.location || undefined,
-        htmlLink: event.htmlLink || undefined,
-      });
+    for (const cal of calendarList.data.items || []) {
+      if (!cal.id) continue;
+
+      try {
+        const response = await calendar.events.list({
+          calendarId: cal.id,
+          timeMin: todayStart.toISOString(),
+          timeMax: todayEnd.toISOString(),
+          singleEvents: true,
+          orderBy: 'startTime',
+        });
+
+        for (const event of response.data.items || []) {
+          const startTime = event.start?.dateTime || event.start?.date;
+          if (!startTime || !event.id) continue;
+
+          events.push({
+            id: event.id,
+            summary: event.summary || '(제목 없음)',
+            start: new Date(startTime),
+            location: event.location || undefined,
+            htmlLink: event.htmlLink || undefined,
+          });
+        }
+      } catch (calError: any) {
+        console.error(`[${user.email}] Failed to fetch daily events from calendar ${cal.id}:`, calError.message);
+      }
     }
+
+    // 시작 시간순으로 정렬
+    events.sort((a, b) => a.start.getTime() - b.start.getTime());
 
     return events;
   } catch (error: any) {
