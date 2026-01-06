@@ -198,10 +198,11 @@ async function sendDiscordNotification(
 
     const body: any = {
       embeds: [embed],
+      content: '@everyone',
     };
 
     if (event.htmlLink) {
-      body.content = `[캘린더에서 보기](${event.htmlLink})`;
+      body.content += ` [캘린더에서 보기](${event.htmlLink})`;
     }
 
     const response = await fetch(webhookUrl, {
@@ -273,7 +274,7 @@ async function sendDailySummary(
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ content: '@everyone', embeds: [embed] }),
     });
 
     if (!response.ok) {
